@@ -7,13 +7,15 @@ contract Core11 {
         address userAddress;
         uint256 accountBalance;
         bool userExists;
+        uint256[] team;
     }
 
     struct Room {
         string name;
-        string creator;
+        address creator;
         uint256 prizePool;
         mapping(address => bool) players;
+        uint256 entryFee;
     }
 
     uint256 public constant entryFee = 1 ether;
@@ -28,7 +30,8 @@ contract Core11 {
             username: _username,
             accountBalance: address(this).balance,
             userAddress: msg.sender,
-            userExists: true
+            userExists: true,
+            team: new uint256[](teamSize)
         });
     }
 
@@ -38,5 +41,21 @@ contract Core11 {
 
     function getEntryFee() public pure returns (uint256) {
         return entryFee;
+    }
+
+    function createTeam(uint256[] memory _team) public {
+        require(_team.length == teamSize, "There should be 11 players");
+        users[msg.sender].team = _team;
+    }
+
+    function createMatch(string memory name) public payable {
+        require(users[msg.sender].userExists, "user is not regisstered");
+
+        matches[name].name = name;
+        matches[name].creator = msg.sender;
+        matches[name].entryFee = entryFee;
+        matches[name].prizePool = msg.value;
+        matches[name].entryFee = entryFee;
+        matches[name].prizePool = msg.value;
     }
 }
