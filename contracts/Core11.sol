@@ -14,4 +14,19 @@ contract Core11 {
         uint256 prizePool;
         mapping(address => bool) players;
     }
+
+    mapping(address => User) public users;
+    mapping(string => Room) public matches;
+
+    uint256 public constant teamSize = 11;
+    
+    function registration(string memory _username) public{
+        users[msg.sender] = User({
+            username: _username,
+            accountBalance: address(this).balance,
+            userAddress: msg.sender
+        })
+    }
+
+
 }
