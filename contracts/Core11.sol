@@ -58,4 +58,18 @@ contract Core11 {
         matches[name].entryFee = entryFee;
         matches[name].prizePool = msg.value;
     }
+
+    function joinMatch(string memory _name) public payable {
+        require(users[msg.sender].userExists, "User is not registered");
+        Room storage room = matches[_name];
+        require(room.entryFee == entryFee, "Entry fee must be 1 ether ");
+        require(!room.players[msg.sender], "User already joined the battle");
+        room.players[msg.sender] = true;
+        room.prizePool += msg.value;
+    }
+
+    function getTeam(address _user) public view returns (uint256[] memory) {
+        require(users[_user].userExists, "User is not registered");
+        return users[_user].team;
+    }
 }
