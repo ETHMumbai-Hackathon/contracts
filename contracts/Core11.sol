@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract FantasySport {
+contract Core11 {
     struct Player {
         string name;
         address walletAddress;
@@ -23,7 +23,6 @@ contract FantasySport {
     mapping(string => Battle) public battles;
     uint256 constant teamSize = 11;
     uint256 constant joiningFee = 0.0001 ether;
-    //  mapping(team => uint) public team_total;
 
     event BattleCreated(string name, address creator, uint256 joiningFee);
     event BattleJoined(string name, address player);
