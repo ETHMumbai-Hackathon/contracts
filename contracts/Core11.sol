@@ -16,6 +16,7 @@ contract Core11 {
         uint256 prizePool;
         mapping(address => bool) players;
         uint256 entryFee;
+        address[] playersArray;
     }
 
     uint256 public constant entryFee = 1 ether;
@@ -51,7 +52,7 @@ contract Core11 {
 
     function createMatch(string memory name) public payable {
         require(users[msg.sender].userExists, "user is not regisstered");
-
+        require(msg.value == entryFee, "Entry fee must be 1 ether");
         matches[name].name = name;
         matches[name].creator = msg.sender;
         matches[name].entryFee = entryFee;
@@ -74,16 +75,36 @@ contract Core11 {
         return users[_user].team;
     }
 
-    function endMatch(string memory _name, uint256[] memory _stats) public{
+    function getMatchPlayers(
+        string memory matchName
+    ) public view returns (address[] memory) {
+        Room storage gmatch = matches[matchName];
+        uint256 totalUsers = gmatch.playersArray.length;
+        address[] memory playerAddress = new address[](totalUsers);
+
+        for (uint256 i = 0; i < totalUsers; i++) {
+            playerAddress[i] = gmatch.playersArray[i];
+        }
+
+        return playerAddress;
+    }
+
+    function endMatch(string memory _name, uint256[] memory _stats) public {
         require(users[msg.sender].userExists, "User not registered");
         Room storage game = matches[_name];
         require(game.creator == msg.sender, "Not authorized");
         uint256 maxScore = 0;
         address winner;
-        for(uint256 i = 0; i < teamSize; i++){
-            address userAddress = users[match.userArray[i]].walletAddress;
+        for (uint256 i = 0; i < teamSize; i++) {
+            address playerAddress = users[game.playersArray[i]].userAddress;
+            uint256 score = _stats[i];
+            if (score > maxScore) {
+                maxScore = score;
+                winner = playerAddress;
+            }
         }
-        payable(winner).transfer(match.prizePool);
+        payable(winner).transfer(game.prizePool);
+
         delete matches[_name];
     }
 }
