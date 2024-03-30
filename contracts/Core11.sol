@@ -1,115 +1,140 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.0;
 
-contract Core11 {
-    struct User {
-        string username;
-        address userAddress;
-        uint256 accountBalance;
-        bool userExists;
+contract FantasySport {
+    struct Player {
+        string name;
+        address walletAddress;
         uint256[] team;
+        uint256 balance;
+        bool exists;
     }
 
-    struct Room {
+    struct Battle {
         string name;
         address creator;
-        uint256 prizePool;
+        uint256 joiningFee;
+        uint256 totalPrize;
         mapping(address => bool) players;
-        uint256 entryFee;
         address[] playersArray;
     }
 
-    uint256 public constant entryFee = 0.0001 ether;
+    mapping(address => Player) public players;
+    mapping(string => Battle) public battles;
+    uint256 constant teamSize = 11;
+    uint256 constant joiningFee = 0.0001 ether;
+    //  mapping(team => uint) public team_total;
 
-    mapping(address => User) public users;
-    mapping(string => Room) public matches;
-
-    uint256 public constant teamSize = 11;
-
-    event BattleCreated(string username, address creator, uint256 entryFee);
-    event BattleJoined(string username, address player);
+    event BattleCreated(string name, address creator, uint256 joiningFee);
+    event BattleJoined(string name, address player);
     event BattleEnded(string name, address winner, uint256 prize);
 
-    function registration(string memory _username) public {
-        require(!users[msg.sender].userExists, "User already registered");
-        users[msg.sender] = User({
-            username: _username,
-            accountBalance: address(this).balance,
-            userAddress: msg.sender,
-            userExists: true,
-            team: new uint256[](teamSize)
+    function register(string memory _name) public {
+        require(!players[msg.sender].exists, "Player already registered.");
+        players[msg.sender] = Player({
+            name: _name,
+            walletAddress: msg.sender,
+            team: new uint256[](teamSize),
+            balance: 0,
+            exists: true
         });
     }
 
-    function checkUser(address _user) public view returns (bool) {
-        return users[_user].userExists;
-    }
-
-    function getEntryFee() public pure returns (uint256) {
-        return entryFee;
-    }
-
     function createTeam(uint256[] memory _team) public {
-        require(users[msg.sender].userExists, "User is already registered.");
-        require(_team.length == teamSize, "There should be 11 players");
-        users[msg.sender].team = _team;
+        require(players[msg.sender].exists, "Player not registered.");
+        require(_team.length == teamSize, "Team size must be 11.");
+        players[msg.sender].team = _team;
     }
 
-    function createMatch(string memory name) public payable {
-        require(users[msg.sender].userExists, "user is not regisstered");
-        require(msg.value == entryFee, "Entry fee must be 0.0001 ether");
-        matches[name].name = name;
-        matches[name].creator = msg.sender;
-        matches[name].entryFee = entryFee;
-        matches[name].prizePool = msg.value;
-        emit BattleCreated(name, msg.sender, entryFee);
+    function playerExists(address _player) public view returns (bool) {
+        return players[_player].exists;
     }
 
-    function joinMatch(string memory _name) public payable {
-        require(users[msg.sender].userExists, "User is not registered");
-        Room storage room = matches[_name];
-        require(room.entryFee == entryFee, "Entry fee must be 1 ether ");
-        require(!room.players[msg.sender], "User already joined the battle");
-        room.players[msg.sender] = true;
-        room.prizePool += msg.value;
+    function getJoiningFee() public pure returns (uint256) {
+        return joiningFee;
+    }
+
+    function createBattle(string memory _name) public payable {
+        require(players[msg.sender].exists, "Player not registered.");
+        require(msg.value == joiningFee, "Joining fee must be 0.0001 ether.");
+        battles[_name].name = _name;
+        battles[_name].creator = msg.sender;
+        battles[_name].joiningFee = joiningFee;
+        battles[_name].totalPrize = msg.value;
+        emit BattleCreated(_name, msg.sender, joiningFee);
+    }
+
+    function joinBattle(string memory _name) public payable {
+        require(players[msg.sender].exists, "Player not registered.");
+        Battle storage battle = battles[_name];
+        require(
+            battle.joiningFee == joiningFee,
+            "Joining fee must be 0.0001 ether."
+        );
+        require(
+            !battle.players[msg.sender],
+            "Player already joined the battle."
+        );
+        battle.players[msg.sender] = true;
+        battle.totalPrize += msg.value;
         emit BattleJoined(_name, msg.sender);
     }
 
-    function getTeam(address _user) public view returns (uint256[] memory) {
-        require(users[_user].userExists, "User is not registered");
-        return users[_user].team;
+    function initializeBattle(
+        string memory _name,
+        address _creator,
+        uint256 _joiningFee,
+        uint256 _totalPrize
+    ) internal returns (Battle storage) {
+        battles[_name].name = _name;
+        battles[_name].creator = _creator;
+        battles[_name].joiningFee = _joiningFee;
+        battles[_name].totalPrize = _totalPrize;
+        return battles[_name];
     }
 
-    function getMatchPlayers(
-        string memory matchName
-    ) public view returns (address[] memory) {
-        Room storage gmatch = matches[matchName];
-        uint256 totalUsers = gmatch.playersArray.length;
-        address[] memory playerAddress = new address[](totalUsers);
-
-        for (uint256 i = 0; i < totalUsers; i++) {
-            playerAddress[i] = gmatch.playersArray[i];
-        }
-
-        return playerAddress;
-    }
-
-    function endMatch(string memory _name, uint256[] memory _stats) public {
-        require(users[msg.sender].userExists, "User not registered");
-        Room storage game = matches[_name];
-        require(game.creator == msg.sender, "Not authorized");
-        uint256 maxScore = 0;
+    function endBattle(
+        string memory _name,
+        uint256[] memory _performance
+    ) public {
+        require(players[msg.sender].exists, "Player not registered.");
+        Battle storage battle = battles[_name];
+        require(
+            battle.creator == msg.sender,
+            "Only the creator can end the battle."
+        );
+        uint256 highestScore = 0;
         address winner;
         for (uint256 i = 0; i < teamSize; i++) {
-            address playerAddress = users[game.playersArray[i]].userAddress;
-            uint256 score = _stats[i];
-            if (score > maxScore) {
-                maxScore = score;
+            address playerAddress = players[battle.playersArray[i]]
+                .walletAddress;
+            uint256 score = _performance[i];
+            if (score > highestScore) {
+                highestScore = score;
                 winner = playerAddress;
             }
         }
-        payable(winner).transfer(game.prizePool);
-        emit BattleEnded(_name, winner, game.prizePool);
-        delete matches[_name];
+        payable(winner).transfer(battle.totalPrize);
+        emit BattleEnded(_name, winner, battle.totalPrize);
+        delete battles[_name];
+    }
+
+    function getBattlePlayers(
+        string memory battleName
+    ) public view returns (address[] memory) {
+        Battle storage battle = battles[battleName];
+        uint256 numPlayers = battle.playersArray.length;
+        address[] memory playerAddresses = new address[](numPlayers);
+
+        for (uint256 i = 0; i < numPlayers; i++) {
+            playerAddresses[i] = battle.playersArray[i];
+        }
+
+        return playerAddresses;
+    }
+
+    function viewTeam(address _player) public view returns (uint256[] memory) {
+        require(players[_player].exists, "Player not registered.");
+        return players[_player].team;
     }
 }
