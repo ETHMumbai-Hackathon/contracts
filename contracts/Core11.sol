@@ -44,6 +44,7 @@ contract Core11 {
     }
 
     function createTeam(uint256[] memory _team) public {
+        require(users[msg.sender].userExists, "User is already registered.");
         require(_team.length == teamSize, "There should be 11 players");
         users[msg.sender].team = _team;
     }
@@ -71,5 +72,18 @@ contract Core11 {
     function getTeam(address _user) public view returns (uint256[] memory) {
         require(users[_user].userExists, "User is not registered");
         return users[_user].team;
+    }
+
+    function endMatch(string memory _name, uint256[] memory _stats) public{
+        require(users[msg.sender].userExists, "User not registered");
+        Room storage game = matches[_name];
+        require(game.creator == msg.sender, "Not authorized");
+        uint256 maxScore = 0;
+        address winner;
+        for(uint256 i = 0; i < teamSize; i++){
+            address userAddress = users[match.userArray[i]].walletAddress;
+        }
+        payable(winner).transfer(match.prizePool);
+        delete matches[_name];
     }
 }
