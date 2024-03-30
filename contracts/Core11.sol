@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 contract Core11 {
@@ -19,14 +19,19 @@ contract Core11 {
         address[] playersArray;
     }
 
-    uint256 public constant entryFee = 1 ether;
+    uint256 public constant entryFee = 0.0001 ether;
 
     mapping(address => User) public users;
     mapping(string => Room) public matches;
 
     uint256 public constant teamSize = 11;
 
+    event BattleCreated(string username, address creator, uint256 entryFee);
+    event BattleJoined(string username, address player);
+    event BattleEnded(string name, address winner, uint256 prize);
+
     function registration(string memory _username) public {
+        require(!users[msg.sender].userExists, "User already registered");
         users[msg.sender] = User({
             username: _username,
             accountBalance: address(this).balance,
@@ -52,13 +57,12 @@ contract Core11 {
 
     function createMatch(string memory name) public payable {
         require(users[msg.sender].userExists, "user is not regisstered");
-        require(msg.value == entryFee, "Entry fee must be 1 ether");
+        require(msg.value == entryFee, "Entry fee must be 0.0001 ether");
         matches[name].name = name;
         matches[name].creator = msg.sender;
         matches[name].entryFee = entryFee;
         matches[name].prizePool = msg.value;
-        matches[name].entryFee = entryFee;
-        matches[name].prizePool = msg.value;
+        emit BattleCreated(name, msg.sender, entryFee);
     }
 
     function joinMatch(string memory _name) public payable {
@@ -68,6 +72,7 @@ contract Core11 {
         require(!room.players[msg.sender], "User already joined the battle");
         room.players[msg.sender] = true;
         room.prizePool += msg.value;
+        emit BattleJoined(_name, msg.sender);
     }
 
     function getTeam(address _user) public view returns (uint256[] memory) {
@@ -104,7 +109,7 @@ contract Core11 {
             }
         }
         payable(winner).transfer(game.prizePool);
-
+        emit BattleEnded(_name, winner, game.prizePool);
         delete matches[_name];
     }
 }
