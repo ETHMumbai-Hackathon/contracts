@@ -1,13 +1,6 @@
-# Sample Hardhat Project
+# CORE11 Backend : 
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+- Contract Address : 0x5BB1f22f6eB0Ad9e08FE7A24CeBDf5B6328F3498
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.js
-```
+- Contract Overview : 
+![Screenshot 2024-03-31 091105](https://github.com/ETHMumbai-Hackathon/contracts/assets/83873093/9569b615-8691-4724-8229-c0c0287c5b78)
